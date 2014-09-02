@@ -61,11 +61,14 @@ add filename args = do
 
 readTodoFile :: String -> IO (Maybe [String])
 readTodoFile filename =
-  do r <- tryJust (guard . isDoesNotExistError) $ readFile filename
-     case r of
-      Left  e        -> putStrLn $ "WARNING: Couldn't open " ++ filename ++ ":\n    " ++ e
-                        return Nothing
-      Right contents -> Just $ lines contents
+  catch
+    (do
+     contents <- readFile filename
+     return $ Just $ lines contents)
+    (\err -> do
+      let e = show (err :: IOException)
+      hPutStrLn stderr ("WARNING: Couldn't open " ++ filename ++ ":\n    " ++ e)
+      return Nothing)
 
 -- |The 'remove' command removes existing TODO item in the file.
 remove :: String   -- ^ The TODO item filename.
