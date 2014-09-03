@@ -32,14 +32,14 @@ view :: String   -- ^ The TODO item filename.
 view filename args = do
   when (length args > 0) $ do
     putStrLn $ "WARNING: unnecessary arguments detected: " ++ (foldr1 (\l r -> l ++ " " ++ r) args)
-  catch
-    (do
-      contents <- readFile filename
-      let itemList = lines contents
-      putStrLn $ unlines $ zipWith (\id item -> printf "%03d : %s" id item) ([0..]::[Int]) itemList)
-    (\err -> do
-      let explanation = show (err :: IOException)
-      hPutStr stderr ("ERROR: Couldn't open " ++ filename ++ ":\n    " ++ explanation))
+  r <- readTodoFile filename
+  case r of
+    Nothing -> return ()
+    Just contents -> do
+      putStrLn $ unlines $ zipWith (\id item -> printf "%03d : %s" id item) ([0..]::[Int]) contents
+    where
+      handler :: IOException -> IO ()
+      handler e = do hPutStrLn stderr $ "ERROR: " ++ show e ++ " in '" ++ filename ++ "'."
 
 -- | The 'add' command adds the new TODO item to the file.
 add :: String   -- ^ The TODO item filename.
@@ -48,11 +48,11 @@ add :: String   -- ^ The TODO item filename.
 add filename args = do
   when (length args == 0) $ do
     hPutStrLn stderr $ "WARNING: no todo item. 'add' command needs one or more todo items."
-  r <- try (do readFile filename)
+  r <- readTodoFile filename
   case r of
-    Left  e -> do hPutStrLn stderr $ "ERROR: " ++ show (e :: IOException) ++ " in " ++ filename ++ "."
-    Right contents -> do
-      let newItems = unlines $ (lines contents) ++ args
+    Nothing -> return ()
+    Just contents -> do
+      let newItems = unlines $ contents ++ args
       catch
         (do
           (tempName, tempHandle) <- openTempFile "." "todotemp"
@@ -60,16 +60,16 @@ add filename args = do
           renameFile filename tempName)
         (\e -> do hPutStrLn stderr $ "ERROR " ++ show (e :: IOException) ++ " in tempfile")
 
-readTodoFile :: String -> IO (Maybe [String])
-readTodoFile filename =
-  catch
-    (do
-     contents <- readFile filename
-     return $ Just $ lines contents)
-    (\err -> do
-      let e = show (err :: IOException)
-      hPutStrLn stderr ("WARNING: Couldn't open " ++ filename ++ ":\n    " ++ e)
-      return Nothing)
+-- | Read TODO file.
+readTodoFile :: String   -- ^ The TODO item filename.
+  -> IO (Maybe [String]) -- ^ If success then return the TODO item list, otherwise Nothing.
+readTodoFile filename = do
+  r <- try (do readFile filename)
+  case r of
+    Left e -> do
+      hPutStrLn stderr $ "WARNING: " ++ show (e :: IOException) ++ " in '" ++ filename ++ "'."
+      return Nothing
+    Right contents -> return $ Just $ lines contents
 
 -- | The 'remove' command removes existing TODO item in the file.
 remove :: String   -- ^ The TODO item filename.
