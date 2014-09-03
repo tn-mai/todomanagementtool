@@ -14,7 +14,7 @@ main = do
   args <- getArgs
   dispatch args
 
--- |Dispatch the command line arguments, and run the command passed.
+-- | Dispatch the command line arguments, and run the command passed.
 dispatch :: [String] -- ^ The command line arguments.
        -> IO()    -- ^ Return the unit type.
 dispatch (filename:"view":args) = view filename args
@@ -25,7 +25,7 @@ dispatch (_:cmd:_) = do putStrLn $ "\"" ++ cmd ++ "\" is unknown command."
 dispatch (filename:[]) = view filename []
 dispatch _ = showUsage
 
--- |The 'view' command lists the TODO item in the file.
+-- | The 'view' command lists the TODO item in the file.
 view :: String   -- ^ The TODO item filename.
      -> [String] -- ^ Should be empty list. If this is no empty then display the warning message.
      -> IO ()    -- ^ Return the unit type.
@@ -41,7 +41,7 @@ view filename args = do
       let explanation = show (err :: IOException)
       hPutStr stderr ("ERROR: Couldn't open " ++ filename ++ ":\n    " ++ explanation))
 
--- |The 'add' command adds the new TODO item to the file.
+-- | The 'add' command adds the new TODO item to the file.
 add :: String   -- ^ The TODO item filename.
     -> [String] -- ^ New TODO items that you want to add.
     -> IO ()    -- ^ Return the unit type.
@@ -70,16 +70,18 @@ readTodoFile filename =
       hPutStrLn stderr ("WARNING: Couldn't open " ++ filename ++ ":\n    " ++ e)
       return Nothing)
 
--- |The 'remove' command removes existing TODO item in the file.
+-- | The 'remove' command removes existing TODO item in the file.
 remove :: String   -- ^ The TODO item filename.
        -> [String] -- ^ Existing TODO item id list that you want to remove.
        -> IO ()    -- ^ Return the unit type.
 remove filename args = do
-  when (length args == 0) $ do
-    putStrLn $ "WARNING: no todo item id. 'remove' command needs one or more todo item id."
-  putStrLn "remove command"
+  if (length args == 0)
+  then -- Interactive mode.
+    putStrLn "remove command"
+  else -- command mode.
+    putStrLn "remove command"
 
--- |Display the usage of this program.
+-- | Display the usage of this program.
 showUsage :: IO() -- ^ Return the unit type.
 showUsage = do
   progName <- getProgName
