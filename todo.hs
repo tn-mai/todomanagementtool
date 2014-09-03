@@ -48,16 +48,17 @@ add :: String   -- ^ The TODO item filename.
 add filename args = do
   when (length args == 0) $ do
     hPutStrLn stderr $ "WARNING: no todo item. 'add' command needs one or more todo items."
-  catch
-    (do
-      contents <- readFile filename
+  r <- try (do readFile filename)
+  case r of
+    Left  e -> do hPutStrLn stderr $ "ERROR: " ++ show (e :: IOException) ++ " in " ++ filename ++ "."
+    Right contents -> do
       let newItems = unlines $ (lines contents) ++ args
-      (tempName, tempHandle) <- openTempFile "." "todotemp"
-      hPutStr tempHandle newItems
-      renameFile filename tempName)
-    (\err -> do
-      let e = show (err :: IOException)
-      hPutStrLn stderr $ "ERROR: xxx " ++ filename ++ ":\n    " ++ e)
+      catch
+        (do
+          (tempName, tempHandle) <- openTempFile "." "todotemp"
+          hPutStr tempHandle newItems
+          renameFile filename tempName)
+        (\e -> do hPutStrLn stderr $ "ERROR " ++ show (e :: IOException) ++ " in tempfile")
 
 readTodoFile :: String -> IO (Maybe [String])
 readTodoFile filename =
