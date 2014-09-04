@@ -3,6 +3,7 @@ The TODO file management tool.
 -}
 import Control.Monad
 import Control.Exception
+import Data.List
 import System.Directory
 import System.Environment
 import System.IO
@@ -82,10 +83,27 @@ remove :: String   -- ^ The TODO item filename.
        -> IO ()    -- ^ Return the unit type.
 remove filename args = do
   if (length args == 0)
-  then -- Interactive mode.
-    putStrLn "remove command"
-  else -- command mode.
-    putStrLn "remove command"
+  then (do -- Interactive mode.
+    view filename []
+    putStrLn "Enter the item id you want to remove:"
+    id <- getLine
+    return ())
+    -- TODO under construction.
+  else (do -- command mode.
+    r <- try (do readFile filename)
+    case r of
+      Left e -> do hPutStrLn stderr $ "WARNING: " ++ show (e :: IOException) ++ " in '" ++ filename ++ "'."
+      Right contents -> do
+        let idList = nub $ map (read :: String -> Int) args
+        let tmp = extract contents idList
+        let tmp2 = rm contents tmp
+        let newItems = unlines $ tmp2
+        return ()
+        where
+          extract :: (Num i) => [String] -> [i] -> [String]
+          extract lst idList = foldr (\n v -> lst !! n : v) [] idList
+          rm :: [String] -> [String] -> [String]
+          rm lst rmList = foldr (\n v -> if (n `elem` rmList) then v else n:v) lst)
 
 -- | Display the usage of this program.
 showUsage :: IO() -- ^ Return the unit type.
