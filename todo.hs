@@ -54,10 +54,15 @@ add filename args = do
     Just contents -> do
       let newItems = unlines $ contents ++ args
       catch
-        (do
-          (tempName, tempHandle) <- openTempFile "." "todotemp"
-          hPutStr tempHandle newItems
-          renameFile filename tempName)
+        (bracketOnError
+          (openTempFile "." "todotemp")
+          (\(tempName, tempHandle) -> do
+            hClose tempHandle
+            removeFile tempName)
+          (\(tempName, tempHandle) -> do
+            hPutStrLn tempHandle newItems
+            hClose tempHandle
+            renameFile tempName filename))
         (\e -> do hPutStrLn stderr $ "ERROR " ++ show (e :: IOException) ++ " in tempfile")
 
 -- | Read TODO file.
