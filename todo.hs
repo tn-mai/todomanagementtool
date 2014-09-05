@@ -87,23 +87,26 @@ remove filename args = do
     view filename []
     putStrLn "Enter the item id you want to remove:"
     id <- getLine
-    return ())
+    removeItems [id])
     -- TODO under construction.
-  else (do -- command mode.
-    r <- try (do readFile filename)
-    case r of
-      Left e -> do hPutStrLn stderr $ "WARNING: " ++ show (e :: IOException) ++ " in '" ++ filename ++ "'."
-      Right contents -> do
-        let idList = nub $ map (read :: String -> Int) args
-        let tmp = extract contents idList
-        let tmp2 = rm contents tmp
-        let newItems = unlines $ tmp2
-        return ()
-        where
-          extract :: (Num i) => [String] -> [i] -> [String]
-          extract lst idList = foldr (\n v -> lst !! n : v) [] idList
-          rm :: [String] -> [String] -> [String]
-          rm lst rmList = foldr (\n v -> if (n `elem` rmList) then v else n:v) lst)
+  else removeItems args -- command mode.
+  where
+    removeItems :: [String] -> IO ()
+    removeItems args = do
+      r <- readTodoFile filename
+      case r of
+        Nothing -> return ()
+        Just contents -> do
+          let idList = nub $ map (read :: String -> Int) args
+          let tmp = extract contents idList
+          let tmp2 = rm contents tmp
+          let newItems = unlines $ tmp2
+          putStrLn newItems
+          where
+            extract :: [String] -> [Int] -> [String]
+            extract lst idList = foldr (\n v -> (lst !! n) : v) [] idList
+            rm :: [String] -> [String] -> [String]
+            rm lst rmList = foldr (\n v -> if (n `elem` rmList) then v else n:v) [] lst
 
 -- | Display the usage of this program.
 showUsage :: IO() -- ^ Return the unit type.
