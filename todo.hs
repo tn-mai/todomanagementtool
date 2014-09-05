@@ -22,6 +22,7 @@ dispatch (filename:"view":args) = view filename args
 dispatch (filename:"add":args) = add filename args
 dispatch (filename:"remove":args) = remove filename args
 dispatch (filename:"rm":args) = remove filename args
+dispatch (filename:"bump":args) = bump filename args
 dispatch (_:cmd:_) = do putStrLn $ "\"" ++ cmd ++ "\" is unknown command."
 dispatch (filename:[]) = view filename []
 dispatch _ = showUsage
@@ -112,6 +113,29 @@ remove filename args = do
             extract lst idList = foldr (\n v -> (lst !! n) : v) [] idList
             rm :: [String] -> [String] -> [String]
             rm lst rmList = foldr (\n v -> if (n `elem` rmList) then v else n:v) [] lst
+
+-- | Bump up TODO item position.
+bump :: String   -- ^ The TODO item filename.
+     -> [String] -- ^ Existing TODO item id list that you want to bump.
+     -> IO ()
+bump filename args = do
+  if (length args == 0) then do
+    hPutStrLn stderr $ "ERROR: no todo item id. 'bump' command needs a todo item id."
+  else do
+    r <- readTodoFile filename
+    case r of
+      Nothing -> return ()
+      Just contents -> do
+        let offset = (read :: String -> Int) $ head args
+        if (offset > 0 && offset < length contents) then do
+          let front = take (offset - 1) contents
+          let prev = [contents !! (offset - 1)]
+          let target = [contents !! offset]
+          let back = drop (offset + 1) contents
+          let newItems = front ++ target ++ prev ++ back
+          writeTodoFile filename $ unlines newItems
+        else
+          hPutStrLn stderr $ "ERROR: '" ++ head args ++ "' is out of range."
 
 -- | Display the usage of this program.
 showUsage :: IO() -- ^ Return the unit type.
