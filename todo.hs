@@ -67,7 +67,9 @@ readTodoFile filename = do
     Right contents -> return $ Just $ lines contents
 
 -- | Write TODO file.
-writeTodoFile :: String -> String -> IO ()
+writeTodoFile :: String -- ^ The TODO item filename.
+              -> String -- ^ The contents that to be writte.
+              -> IO ()
 writeTodoFile filename contents =
   catch
     (bracketOnError
