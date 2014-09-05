@@ -53,18 +53,7 @@ add filename args = do
   case r of
     Nothing -> return ()
     Just contents -> do
-      let newItems = unlines $ contents ++ args
-      catch
-        (bracketOnError
-          (openTempFile "." "todotemp")
-          (\(tempName, tempHandle) -> do
-            hClose tempHandle
-            removeFile tempName)
-          (\(tempName, tempHandle) -> do
-            hPutStrLn tempHandle newItems
-            hClose tempHandle
-            renameFile tempName filename))
-        (\e -> do hPutStrLn stderr $ "ERROR " ++ show (e :: IOException) ++ " in tempfile")
+      writeTodoFile filename . unlines $ contents ++ args
 
 -- | Read TODO file.
 readTodoFile :: String   -- ^ The TODO item filename.
@@ -76,6 +65,21 @@ readTodoFile filename = do
       hPutStrLn stderr $ "WARNING: " ++ show (e :: IOException) ++ " in '" ++ filename ++ "'."
       return Nothing
     Right contents -> return $ Just $ lines contents
+
+-- | Write TODO file.
+writeTodoFile :: String -> String -> IO ()
+writeTodoFile filename contents =
+  catch
+    (bracketOnError
+      (openTempFile "." "todotemp")
+      (\(tempName, tempHandle) -> do
+        hClose tempHandle
+        removeFile tempName)
+      (\(tempName, tempHandle) -> do
+        hPutStrLn tempHandle contents
+        hClose tempHandle
+        renameFile tempName filename))
+    (\e -> do hPutStrLn stderr $ "ERROR " ++ show (e :: IOException) ++ " in tempfile")
 
 -- | The 'remove' command removes existing TODO item in the file.
 remove :: String   -- ^ The TODO item filename.
