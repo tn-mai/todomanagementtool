@@ -76,7 +76,7 @@ writeTodoFile filename contents =
         hClose tempHandle
         removeFile tempName)
       (\(tempName, tempHandle) -> do
-        hPutStrLn tempHandle contents
+        hPutStr tempHandle contents
         hClose tempHandle
         renameFile tempName filename))
     (\e -> do hPutStrLn stderr $ "ERROR " ++ show (e :: IOException) ++ " in tempfile")
