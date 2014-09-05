@@ -104,8 +104,7 @@ remove filename args = do
           let idList = nub $ map (read :: String -> Int) args
           let tmp = extract contents idList
           let tmp2 = rm contents tmp
-          let newItems = unlines $ tmp2
-          putStrLn newItems
+          writeTodoFile filename . unlines $ tmp2
           where
             extract :: [String] -> [Int] -> [String]
             extract lst idList = foldr (\n v -> (lst !! n) : v) [] idList
