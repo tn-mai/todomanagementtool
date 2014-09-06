@@ -95,7 +95,6 @@ remove filename args = do
     putStrLn "Enter the item id you want to remove:"
     id <- getLine
     removeItems [id])
-    -- TODO under construction.
   else removeItems args -- command mode.
   where
     removeItems :: [String] -> IO ()
