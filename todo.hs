@@ -1,6 +1,7 @@
 {- |
 The TODO file management tool.
 -}
+import Control.Applicative
 import Control.Monad
 import Control.Exception
 import Data.List
@@ -37,11 +38,13 @@ view filename args = do
   r <- readTodoFile filename
   case r of
     Nothing -> return ()
-    Just contents -> do
-      putStrLn $ unlines $ zipWith (\id item -> printf "%03d : %s" id item) ([0..]::[Int]) contents
+    Just contents -> viewItemList contents
     where
       handler :: IOException -> IO ()
       handler e = do hPutStrLn stderr $ "ERROR: " ++ show e ++ " in '" ++ filename ++ "'."
+
+viewItemList :: [String] -> IO ()
+viewItemList contents = putStrLn $ unlines $ zipWith (\id item -> printf "%03d : %s" id item) ([0..]::[Int]) contents
 
 -- | The 'add' command adds the new TODO item to the file.
 add :: String   -- ^ The TODO item filename.
@@ -118,23 +121,43 @@ bump :: String   -- ^ The TODO item filename.
      -> [String] -- ^ Existing TODO item id list that you want to bump.
      -> IO ()
 bump filename args = do
-  if (length args == 0) then do
-    hPutStrLn stderr $ "ERROR: no todo item id. 'bump' command needs a todo item id."
-  else do
-    r <- readTodoFile filename
-    case r of
-      Nothing -> return ()
-      Just contents -> do
-        let offset = (read :: String -> Int) $ head args
-        if (offset > 0 && offset < length contents) then do
-          let front = take (offset - 1) contents
-          let prev = [contents !! (offset - 1)]
-          let target = [contents !! offset]
-          let back = drop (offset + 1) contents
-          let newItems = front ++ target ++ prev ++ back
-          writeTodoFile filename $ unlines newItems
-        else
-          hPutStrLn stderr $ "ERROR: '" ++ head args ++ "' is out of range."
+  r <- readTodoFile filename
+  case r of
+    Nothing -> return ()
+    Just contents -> do
+      if (length args == 0) then do
+        newItems <- interactiveBump contents
+        when (notEqForList contents newItems) $ writeTodoFile filename $ unlines newItems
+        return ()
+      else do
+        newItems <- bumpItem (head args) contents
+        when (notEqForList contents newItems) $ writeTodoFile filename $ unlines newItems
+        return ()
+  where
+    bumpItem :: String -> [String] -> IO ([String])
+    bumpItem id contents =
+      let offset = (read :: String -> Int) id
+      in if ((offset > 0) && (offset < length contents)) then
+        let front = take (offset - 1) contents
+            prev = [contents !! (offset - 1)]
+            target = [contents !! offset]
+            back = drop (offset + 1) contents
+        in return $ front ++ target ++ prev ++ back
+      else do
+        hPutStrLn stderr $ "ERROR: '" ++ id ++ "' is out of range."
+        return contents
+    interactiveBump :: [String] -> IO ([String])
+    interactiveBump contents = do
+      viewItemList contents
+      putStrLn "Enter the item id you want to bump up:"
+      id <- getLine
+      if (id == "q" || id == "Q") then
+        return contents
+      else do
+        y <- (bumpItem id contents) >>= interactiveBump
+        return y
+    notEqForList :: (Eq a) => [a] -> [a] -> Bool
+    notEqForList lhs rhs = foldr (\(l, r) v -> v || not (l == r)) False $ zip lhs rhs
 
 -- | Display the usage of this program.
 showUsage :: IO() -- ^ Return the unit type.
