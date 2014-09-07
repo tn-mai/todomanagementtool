@@ -112,7 +112,7 @@ remove filename args = do
           writeTodoFile filename . unlines $ tmp2
           where
             extract :: [String] -> [Int] -> [String]
-            extract lst idList = foldr (\n v -> (lst !! n) : v) [] idList
+            extract lst idList = foldr (\n v -> if (n >= 0 && n < (length lst)) then ((lst !! n) : v) else v) [] idList
             rm :: [String] -> [String] -> [String]
             rm lst rmList = foldr (\n v -> if (n `elem` rmList) then v else n:v) [] lst
 
