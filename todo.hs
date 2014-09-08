@@ -52,14 +52,15 @@ viewItemList contents = putStrLn $ unlines $ zipWith (\id item -> printf "%03d :
 add :: String   -- ^ The TODO item filename.
     -> [String] -- ^ New TODO items that you want to add.
     -> IO ()    -- ^ Return the unit type.
-add filename args = do
-  when (length args == 0) $ do
+add filename args =
+  if (length args == 0) then do
     hPutStrLn stderr $ "WARNING: no todo item. 'add' command needs one or more todo items."
-  r <- readTodoFile filename
-  case r of
-    Nothing -> return ()
-    Just contents -> do
-      writeTodoFile filename . unlines $ contents ++ args
+  else do
+    r <- readTodoFile filename
+    case r of
+      Nothing -> return ()
+      Just contents -> do
+        writeTodoFile filename . unlines $ contents ++ args
 
 -- | Read TODO file.
 readTodoFile :: String   -- ^ The TODO item filename.
