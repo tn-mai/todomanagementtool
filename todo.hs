@@ -5,6 +5,8 @@ import Control.Applicative
 import Control.Monad
 import Control.Exception
 import Data.List
+import Data.Maybe
+import Text.Read
 import System.Directory
 import System.Environment
 import System.IO
@@ -106,15 +108,18 @@ remove filename args = do
       case r of
         Nothing -> return ()
         Just contents -> do
-          let idList = nub $ map (read :: String -> Int) args
-          let tmp = extract contents idList
-          let tmp2 = rm contents tmp
-          writeTodoFile filename . unlines $ tmp2
-          where
-            extract :: [String] -> [Int] -> [String]
-            extract lst idList = foldr (\n v -> if (n >= 0 && n < (length lst)) then ((lst !! n) : v) else v) [] idList
-            rm :: [String] -> [String] -> [String]
-            rm lst rmList = foldr (\n v -> if (n `elem` rmList) then v else n:v) [] lst
+          let parsedArgs = map (readMaybe :: String -> Maybe Int) args
+          if Nothing `elem` parsedArgs then (do
+            hPutStrLn stderr "ERROR: Couldn't parse argments:"
+            mapM_ (\e -> hPutStr stderr $ " " ++ e) args)
+          else do
+            let idList = rm contents . extract contents . nub $ map fromJust parsedArgs
+            writeTodoFile filename $ unlines idList
+            where
+                extract :: [String] -> [Int] -> [String]
+                extract lst idList = foldr (\n v -> if (n >= 0 && n < (length lst)) then ((lst !! n) : v) else v) [] idList
+                rm :: [String] -> [String] -> [String]
+                rm lst rmList = foldr (\n v -> if (n `elem` rmList) then v else n:v) [] lst
 
 -- | Bump up TODO item position.
 bump :: String   -- ^ The TODO item filename.
