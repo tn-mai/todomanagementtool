@@ -179,4 +179,5 @@ showUsage = do
     "  remove todo-item-id: remove todo-item.",
     "  rm todo-item-id    : this is same \"remove\" command.",
     "  view               : show todo-item list.",
+    "  bump todo-item-id  : bump up todo-item.",
     "  (no command)       : show this messages." ]
