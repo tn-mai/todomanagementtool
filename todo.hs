@@ -50,11 +50,11 @@ viewItemList contents = putStrLn $ unlines $ zipWith (\id item -> printf "%03d :
 
 -- | The 'add' command adds the new TODO item to the file.
 add :: String   -- ^ The TODO item filename.
-    -> [String] -- ^ New TODO items that you want to add.
+    -> [String] -- ^ New TODO items that you want to add. If empty, display the error message.
     -> IO ()    -- ^ Return the unit type.
 add filename args =
   if (length args == 0) then do
-    hPutStrLn stderr $ "WARNING: no todo item. 'add' command needs one or more todo items."
+    hPutStrLn stderr $ "ERROR: no todo item. 'add' command needs one or more todo items."
   else do
     r <- readTodoFile filename
     case r of
@@ -69,7 +69,7 @@ readTodoFile filename = do
   r <- try (do readFile filename)
   case r of
     Left e -> do
-      hPutStrLn stderr $ "WARNING: " ++ show (e :: IOException) ++ " in '" ++ filename ++ "'."
+      hPutStrLn stderr $ "ERROR: " ++ show (e :: IOException) ++ " in '" ++ filename ++ "'."
       return Nothing
     Right contents -> return $ Just $ lines contents
 
@@ -88,7 +88,7 @@ writeTodoFile filename contents =
         hPutStr tempHandle contents
         hClose tempHandle
         renameFile tempName filename))
-    (\e -> do hPutStrLn stderr $ "ERROR " ++ show (e :: IOException) ++ " in tempfile")
+    (\e -> do hPutStrLn stderr $ "ERROR: " ++ show (e :: IOException) ++ " in tempfile")
 
 -- | The 'remove' command removes existing TODO item in the file.
 remove :: String   -- ^ The TODO item filename.
